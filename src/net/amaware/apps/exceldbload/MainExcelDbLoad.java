@@ -61,6 +61,7 @@ public class MainExcelDbLoad {
 				acomm.end();
 				
 			} catch (AException e1) {
+				acomm.addPageMsgsLineOut("MainExcelDbLoad AException msg{"+e1.getMessage()+"}");
 				throw e1;
 			}
 

@@ -222,7 +222,7 @@ public class ExcelDbTable extends DataStoreReport {
 	     outBuffer.append(thisClassName+"=>ColHeaders ");
 	     
 	     List<String> colHeadList = new ArrayList<String>();
-	     colHeadList.add("Request-Result");
+	     //colHeadList.add("Request-Result");
 	     for (ADataColResult adcr: getRowDataColResultList()) {
 	    	 
 	    	 outBuffer.append(" Name{" + adcr.getColumnName() + "}"
@@ -420,7 +420,11 @@ public class ExcelDbTable extends DataStoreReport {
 				}
 			}
 			
-			outRowCols.add(outReqResultBuffer.toString());
+			//outRowCols.add(outReqResultBuffer.toString());
+			
+			//String firstField = getDataRowColsToList().get(0);
+			getDataRowColsToList().set(0, "res-"+outReqResultBuffer.toString());
+			
 			outRowCols.addAll(getDataRowColsToList());
      		aFileExcelPOI.doOutputRowNext(acomm 
   			         , aSheetDetail
