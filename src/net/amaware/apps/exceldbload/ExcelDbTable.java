@@ -28,8 +28,6 @@ import net.amaware.autil.AException;
 import net.amaware.autil.AExceptionSql;
 import net.amaware.autil.AFileExcelPOI;
 import net.amaware.autil.AProperties;
-import net.amaware.autil.AFileO;
-
 //import net.amaware.serv.DataStore;
 import net.amaware.serv.HtmlTargetServ;
 import net.amaware.serv.SourceProperty;
@@ -71,11 +69,19 @@ public class ExcelDbTable extends DataStoreReport {
 	//
 	String optPropertiesFileName="";
 	String optTableName="";
-	String optOPTIONS="";
 	String optFileDate="";
+	
+	String optFileOPTION="";
+	
+	String optRowOPTION="";
+	//
+	enum OptFileOptions {  None, Insert, Mod;}; 
+	OptFileOptions optFileOption = OptFileOptions.None;
+	OptFileOptions optFileRowOption = OptFileOptions.None;
 	//
 	AFileExcelPOI aFileExcelPOI = new AFileExcelPOI(); 
 	Sheet aSheetDetail;
+	Sheet aSheetResult;
 	Sheet aSheetMetaData;
 	Sheet aSheetLog;
     //    
@@ -111,6 +117,7 @@ public class ExcelDbTable extends DataStoreReport {
 
 	}
 
+	@Override
 	public DataStoreReport processThis(ACommDb acomm, SourceProperty _aProperty, HtmlTargetServ _aHtmlServ) {
 		super.processThis(acomm, _aProperty, _aHtmlServ); // always call this
 															// first
@@ -119,7 +126,7 @@ public class ExcelDbTable extends DataStoreReport {
 
 		_aProperty.displayProperties(acomm);
 		
-		outFileNamePrefix = acomm.getOutFileDirectoryWithClassName()+acomm.getArgFileName();
+		outFileNamePrefix = acomm.getOutFileDirectoryWithClassName()+AComm.getArgFileName();
 		
 		//_aProperty.displayProperties(acomm);
 		//_aProperty.setValue(SourceProperty.getPropDataRowEnd(), 15);
@@ -150,6 +157,7 @@ public class ExcelDbTable extends DataStoreReport {
 		return "REPORT-BREAK 1" + "REPORT-BREAK-SUM 2" + "; ";
 	}
 
+	@Override
 	public boolean doSourceHead(ACommDb acomm, Vector dataFields) throws AException {
 		super.doSourceHead(acomm, dataFields);
 		// Head Data si not available here.....see doDataHead
@@ -174,15 +182,47 @@ public class ExcelDbTable extends DataStoreReport {
 		
 		optPropertiesFileName=optionVector.elementAt(0);
 		optTableName=optionVector.elementAt(1);
-		optOPTIONS=optionVector.elementAt(2);
 		optFileDate=optionVector.elementAt(3);
 		
+
+		optFileOPTION=optionVector.elementAt(2).toLowerCase();		
+		optFileOption = OptFileOptions.None;
+		switch (optFileOPTION) {
+		case "options":
+		case "option":
+		case "":
+		case "none":	
+
+			break;
+
+		case "insert":	
+			optFileOption=OptFileOptions.Insert;
+			break;
+
+		case "mod":	
+			optFileOption=OptFileOptions.Mod;
+			break;
+			
+			
+		default:
+			
+			throw new AException(acomm, this.getClass().getName()+"=>File header Option invalid{"+optFileOption.toString()+"}"
+					            +" |Valid Options{"+Arrays.asList(OptFileOptions.values())+"}"
+			                    );
+			
+			//break;
+		} 
 		
+		getThisHtmlServ().outPageLine(acomm, acomm.addPageMsgsLineOut("=>Using File header Option{"+optFileOption.toString()+"}") , "color:navy;border:solid orange .1em;");
 
 		
 		return true;
 	}
 
+/*	
+*/
+     
+	@Override
 	public boolean doDataHead(ACommDb acomm, int rowNum) throws AException {
 
 
@@ -257,16 +297,16 @@ public class ExcelDbTable extends DataStoreReport {
 			thisADatabaseAccess = new ADatabaseAccess(acomm, optPropertiesFileName);
 			thisADataColSqlMeta = thisADatabaseAccess.doDbMetadata(optTableName);				
 			//	
-
-			aSheetDetail = aFileExcelPOI.doCreateNewSheet("Detail", 2
- 		            , Arrays.asList(optPropertiesFileName,optTableName,optOPTIONS,optFileDate
+			aSheetDetail = aFileExcelPOI.doCreateNewSheet("Request", 2
+ 		            , Arrays.asList(optPropertiesFileName,optTableName,optFileOPTION,optFileDate
  		            		,"Ran@"+acomm.getCurrTimestampNew()
  		            		, thisADatabaseAccess.getThisAcomm().getDbUrlDbAndSchemaName()
  		            		)
  		            		
  					, colHeadList
                    );			
-	        //
+			//	
+			//
 			aSheetMetaData = thisADatabaseAccess.doDbMetadataExcelSheet(aFileExcelPOI,"MetaData");
 			//
 	   		aSheetLog=aFileExcelPOI.doCreateNewSheet("Log", 2
@@ -286,6 +326,7 @@ public class ExcelDbTable extends DataStoreReport {
 	* 
 	*/
 
+	@Override
 	public boolean doDataRowsNotFound(ACommDb acomm) throws AException {
 		super.doDataRowsNotFound(acomm);
 
@@ -300,6 +341,7 @@ public class ExcelDbTable extends DataStoreReport {
 	* 
 	*/
 
+	@Override
 	public boolean doDataRow(ACommDb acomm, AException _exceptionSql, boolean _isRowBreak) throws AException {
 
 		// super.doDataRow(acomm, _exceptionSql, _isRowBreak); // sends pout row
@@ -310,11 +352,17 @@ public class ExcelDbTable extends DataStoreReport {
 		super.doDataRow(acomm, _exceptionSql, _isRowBreak);
 		
 	    StringBuffer outBuffer = new StringBuffer();
-	    outBuffer.append("=>DataRow#{" + getSourceRowNum() + "}");
+	    outBuffer.append("=>FileDataRow#{" + getSourceRowNum() + "}");
 	    int colNum=0; 
+	    String colOptionValue="";
 	    for (ADataColResult adcr: getRowDataColResultList()) {
 	    	++colNum; 
-	    	 outBuffer.append("=>col#{"+colNum+"}"+" Name{" + adcr.getColumnName() + "}"
+	    	
+	    	if(colNum==1 && adcr.getColumnValue()!=null) {
+	    		colOptionValue=adcr.getColumnValue().toLowerCase();	
+	    	}
+	    	
+	    	 outBuffer.append(" |col#{"+colNum+"}"+" Name{" + adcr.getColumnName() + "}"
 						               + " Title{" + adcr.getColumnTitle() + "}"
 						               + " Val{" + adcr.getColumnValue() + "}"
 						               );
@@ -323,6 +371,50 @@ public class ExcelDbTable extends DataStoreReport {
 	    	 
 		}		
 		
+		if (colOptionValue.contentEquals("end")) {
+			getThisHtmlServ().outPageLine(acomm, acomm.addPageMsgsLineOut("END requested...No more being processed") , "color:navy;border:solid orange .1em;");
+     		aFileExcelPOI.doOutputRowNext(acomm 
+ 			         , aSheetDetail
+ 				     , Arrays.asList(
+						        "ENDED "+this.getClass().getSimpleName()
+						        //,this.getClass().getSimpleName()
+				  	            //, UDATA_TYPES.getInsertStatement(acomm)
+					            ) 
+			     );    
+			return false;
+		} else {
+			optRowOPTION=colOptionValue.trim();
+			optFileRowOption = OptFileOptions.None;
+			switch (optRowOPTION) {
+			case "":
+			case "none":	
+
+				break;
+
+			case "insert":	
+				optFileRowOption=OptFileOptions.Insert;
+				break;
+
+			case "mod":	
+				optFileRowOption=OptFileOptions.Mod;
+				break;
+				
+				
+			default:
+				
+				throw new AException(acomm, this.getClass().getName()+"=>File rec Option invalid{"+optFileOPTION+"}"
+						            +" |Valid Options{"+Arrays.asList(OptFileOptions.values())+"}"
+				                    );
+				
+				//break;
+			} 
+		}
+	
+		if (optFileRowOption==OptFileOptions.None) {
+			optFileRowOption=optFileOption;	
+		}
+		
+		outBuffer.append("=>Row Option{"+optFileRowOption.name()+"}");
 		getThisHtmlServ().outPageLine(acomm, acomm.addPageMsgsLineOut(outBuffer.toString()) , "color:navy;border:solid orange .1em;");		
 		
         //
@@ -364,23 +456,32 @@ public class ExcelDbTable extends DataStoreReport {
 			//
 			
 			try {
+				
 				//UDATA_TYPES.doProcessInsertRow(acomm, UDATA_TYPES.getInsertStatement(acomm));
-	   	  		aFileExcelPOI.doOutputRowNext(acomm 
-	    			      , aSheetLog, (Arrays.asList(
-	    						        ""+getSourceRowNum()
-	    						        ,"Row Inserted"
-	    				  	            //, UDATA_TYPES.getInsertStatement(acomm)
-	    					            ) 
-	    			                   )
-	    				   );
 	   	  		
-				getThisHtmlServ().outPageLine(acomm,
-						acomm.addPageMsgsLineOut(thisClassName + "...Row Inserted for {" //+ UDATA_TYPES.getInsertStatement(acomm) + "}"
-								));
+				
+				if (optFileRowOption == OptFileOptions.Insert) {
+					
+					thisADatabaseAccess.doProcessInsertRow(getRowDataColResultList());
+					
+					aFileExcelPOI.doOutputRowNext(acomm 
+		    			      , aSheetLog, (Arrays.asList(
+		    						        ""+getSourceRowNum()
+		    						        ,"Row Inserted"
+		    				  	            //, UDATA_TYPES.getInsertStatement(acomm)
+		    					            ) 
+		    			                   )
+		    				   );
+		   	  		
+					getThisHtmlServ().outPageLine(acomm,
+							acomm.addPageMsgsLineOut(thisClassName + "...Row Inserted for {" //+ UDATA_TYPES.getInsertStatement(acomm) + "}"
+									));
 
-				outReqResultBuffer.append("Inserted");
-				
-				
+					outReqResultBuffer.append("Inserted");
+					
+				} else {
+					outReqResultBuffer.append("Bypassed");
+				}
 				
 			} catch (AExceptionSql e1) {
 				if (e1.isExceptionSqlRowDuplicate(acomm)) { //
@@ -399,7 +500,7 @@ public class ExcelDbTable extends DataStoreReport {
 		    			        )
 		      		);
 
-		   	  	outReqResultBuffer.append(e1.getExceptionMsg());
+		   	  	    outReqResultBuffer.append(e1.getExceptionMsg());
 		   	  		
 				} else {
 					getThisHtmlServ().outPageLine(acomm, 1, "...Row NOT Inserted for {"
@@ -416,16 +517,21 @@ public class ExcelDbTable extends DataStoreReport {
 		    			        )
 		      		);
 
-					throw e1;
+		   	  	    outReqResultBuffer.append(e1.getExceptionMsg());
+		   	  	
+					//throw e1;
 				}
 			}
 			
 			//outRowCols.add(outReqResultBuffer.toString());
 			
 			//String firstField = getDataRowColsToList().get(0);
-			getDataRowColsToList().set(0, "res-"+outReqResultBuffer.toString());
+			//getDataRowColsToList().set(0, "res-"+outReqResultBuffer.toString());
 			
 			outRowCols.addAll(getDataRowColsToList());
+			
+			outRowCols.set(0,optFileRowOption.toString()+ "="+outReqResultBuffer.toString());
+			
      		aFileExcelPOI.doOutputRowNext(acomm 
   			         , aSheetDetail
   				     , outRowCols
@@ -642,6 +748,7 @@ public class ExcelDbTable extends DataStoreReport {
 	/**
 	 * @return
 	 */
+	@Override
 	public boolean doDataRowBreak(ACommDb acomm) throws AException {
 
 		int _currRowNum = getDataRowNum();
@@ -658,6 +765,7 @@ public class ExcelDbTable extends DataStoreReport {
 		return super.doDataRowBreak(acomm);
 	}
 
+	@Override
 	public boolean doDataRowsEnded(ACommDb acomm) throws AException {
 
 		
@@ -703,6 +811,15 @@ public class ExcelDbTable extends DataStoreReport {
 					        ) 
 			        )
 		);   
+  		
+	    thisADatabaseAccess.doQueryRsExcel(aFileExcelPOI
+	            , "Results"
+	            , "Select *"
+	        +" from " + optTableName  
+	//+ " Where field_nme  = '" + ufieldname +"'" 
+	        
+	//+ " order by entry_type, entry_subject, entry_topic"
+	);  		
   		
    		try {
 			aFileExcelPOI.doOutputEnd();
