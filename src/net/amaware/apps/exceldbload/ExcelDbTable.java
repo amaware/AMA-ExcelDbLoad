@@ -97,6 +97,10 @@ public class ExcelDbTable extends DataStoreReport {
     ADatabaseAccess thisADatabaseAccess;
 	List<ADataColSqlMeta> thisADataColSqlMeta = new ArrayList<ADataColSqlMeta>();
 	//
+	List<ADataColResult> dataHeaderDataColResultList  = new ArrayList<ADataColResult>();;
+	//
+	int bypassDataHeadRecCnt=0;
+	//
 	boolean isDefOut = false;
 	//
 	public String dbURL = "";
@@ -214,7 +218,6 @@ public class ExcelDbTable extends DataStoreReport {
 		} 
 		
 		getThisHtmlServ().outPageLine(acomm, acomm.addPageMsgsLineOut("=>Using File header Option{"+optFileOption.toString()+"}") , "color:navy;border:solid orange .1em;");
-
 		
 		return true;
 	}
@@ -225,20 +228,43 @@ public class ExcelDbTable extends DataStoreReport {
 	@Override
 	public boolean doDataHead(ACommDb acomm, int rowNum) throws AException {
 
-
-		int colNum = 0;
-
 		  //if no sql statement on report, comment out next line 
        //setUserTitle2(getThisHtmlServ().formatForSqlout(acomm, getThisStatement()));
        setUserTitle2(thisClassName);
-
-	  //
-
-		  
-        //
-
-
-
+	   //
+       /**/
+       
+		super.doDataHead(acomm, rowNum);	       
+       
+       List<ADataColResult> al = getRowDataColResultList();
+       
+		Enumeration en = getDataRow().getDataColVec().elements();
+		//int cnt=0;
+		while (en.hasMoreElements()) {
+			ADataColResult aDataColResult = (ADataColResult) en.nextElement();
+		    if (aDataColResult != null && 
+		    		(aDataColResult.getColumnName().contentEquals("PK-UNIQUE"))) {
+    	    	//ADataColResult newADataColResult = new ADataColResult("",aDataColResult.getColumnValue(), aDataColResult.getColumnValue(), true); 
+    	    	// dataHeaderDataColResultList.add(newADataColResult);
+    	    	++bypassDataHeadRecCnt;
+    	    	return true;
+	        } else {
+	        	break;
+	        }
+		}
+		/**/
+		
+	   //
+       setUpDataHead(acomm, rowNum, getRowDataColResultList());
+       //			
+	   return true;
+       //
+	}
+	
+	public void setUpDataHead(ACommDb acomm, int rowNum, List<ADataColResult> _ADataColResultList) throws AException {
+		
+		int colNum = 0;
+		
 		//outSqlInsertFileNameFull = acomm.getOutFileDirectoryWithSep()+dbTable+".INSERT.SQL";
 		outSqlInsertFileNameFull = acomm.getOutFileDirectoryWithClassName()+dbTable+".INSERT.SQL";
 		
@@ -256,14 +282,14 @@ public class ExcelDbTable extends DataStoreReport {
 		outSqlInsertFile.writeLine("-- " + outSqlInsertFileNameFull);
 		outSqlInsertFile.writeLine("--");   		
    		//
-		super.doDataHead(acomm, rowNum);	
+
 		
 	     StringBuffer outBuffer = new StringBuffer();
 	     outBuffer.append(thisClassName+"=>ColHeaders ");
 	     
 	     List<String> colHeadList = new ArrayList<String>();
 	     //colHeadList.add("Request-Result");
-	     for (ADataColResult adcr: getRowDataColResultList()) {
+	     for (ADataColResult adcr: _ADataColResultList) {
 	    	 
 	    	 outBuffer.append(" Name{" + adcr.getColumnName() + "}"
 						               + " Title{" + adcr.getColumnTitle() + "}"
@@ -315,12 +341,8 @@ public class ExcelDbTable extends DataStoreReport {
 					  	        , "Item"
 					  	        , "Msg"
 					            )
-	               );   					
-            //			
-		return true;
-
+	               );   							
 	}
-
 	/*
 	* 
 	* 
@@ -351,6 +373,41 @@ public class ExcelDbTable extends DataStoreReport {
 
 		super.doDataRow(acomm, _exceptionSql, _isRowBreak);
 		
+		List<ADataColResult> al = getRowDataColResultList();
+		
+		if (bypassDataHeadRecCnt == 1) { //this is dataHeadRow
+			--bypassDataHeadRecCnt;
+			
+
+			
+			String colName="";
+			Enumeration en = getDataRow().getDataColVec().elements();
+			while (en.hasMoreElements()) {
+				ADataColResult aDataColResult = (ADataColResult) en.nextElement();
+				
+				colName=aDataColResult.getColumnName();
+				
+			    //if (aDataColResult != null && 
+			    //		(aDataColResult.getColumnName().contentEquals("PK-UNIQUE"))) {
+	    	    	//ADataColResult newADataColResult = new ADataColResult("",aDataColResult.getColumnValue(), aDataColResult.getColumnValue(), true); 
+	    	    	// dataHeaderDataColResultList.add(newADataColResult);
+	    	    	//++bypassDataHeadRecCnt;
+	    	    	//return true;
+		        //}	    	   
+			}			
+			setUpDataHead(acomm, _currRowNum, getRowDataColResultList());
+			//setUpDataHead(acomm, _currRowNum, dataHeaderDataColResultList);
+			return true;
+		} else if (bypassDataHeadRecCnt > 0) {
+			--bypassDataHeadRecCnt;
+			return true;
+		}
+		
+		//if (dataHeaderDataColResultList.size() > 0) {
+		//	setUpDataHead(acomm, _currRowNum, dataHeaderDataColResultList);
+		//	dataHeaderDataColResultList.clear();
+		//}
+		
 	    StringBuffer outBuffer = new StringBuffer();
 	    outBuffer.append("=>FileDataRow#{" + getSourceRowNum() + "}");
 	    int colNum=0; 
@@ -373,10 +430,10 @@ public class ExcelDbTable extends DataStoreReport {
 		
 		if (colOptionValue.contentEquals("end")) {
 			getThisHtmlServ().outPageLine(acomm, acomm.addPageMsgsLineOut("END requested...No more being processed") , "color:navy;border:solid orange .1em;");
-     		aFileExcelPOI.doOutputRowNext(acomm 
+     		aFileExcelPOI.doOutputRowNextBreak(acomm 
  			         , aSheetDetail
  				     , Arrays.asList(
-						        "ENDED "+this.getClass().getSimpleName()
+						        this.getClass().getSimpleName() + " at End"
 						        //,this.getClass().getSimpleName()
 				  	            //, UDATA_TYPES.getInsertStatement(acomm)
 					            ) 
@@ -402,7 +459,7 @@ public class ExcelDbTable extends DataStoreReport {
 				
 			default:
 				
-				throw new AException(acomm, this.getClass().getName()+"=>File rec Option invalid{"+optFileOPTION+"}"
+				throw new AException(acomm, this.getClass().getName()+"=>File rec Option invalid{"+optRowOPTION+"}"
 						            +" |Valid Options{"+Arrays.asList(OptFileOptions.values())+"}"
 				                    );
 				
@@ -822,7 +879,7 @@ public class ExcelDbTable extends DataStoreReport {
 	);  		
   		
    		try {
-			aFileExcelPOI.doOutputEnd();
+			aFileExcelPOI.doOutputEnd(acomm);
 		} catch (IOException e) {
 			throw new AException(acomm, e, " Close of outFileExcel");
 		}

@@ -44,12 +44,17 @@ public class MainExcelDbLoad {
 	  		    	
 						mainApp = new MainAppDataStore(acomm, new ExcelDbTable(), thisFileName, acomm.getFileTextDelimTab());
 	  		    	    //mainApp = new MainAppDataStore(acomm, new ExcelDbTable(), thisFileName, '|');
+						//
 						mainApp.setSourceHeadRowStart(1);
-						mainApp.setSourceDataHeadRowStart(3);
-						//mainApp.setSourceDataHeadRowEnd(1);
-						mainApp.setSourceDataRowStart(4);
+						//
+						//mainApp.setSourceDataHeadRowStart(3);
+						mainApp.setSourceDataHeadRowStart(2);
+						//
+						//mainApp.setSourceDataRowStart(4);
+						mainApp.setSourceDataRowStart(3);
+						//
 						//mainApp.setSourceDataRowEnd(10);
-						
+						//
 						mainApp.doProcess(acomm, "MainExcelDbTable");		
 	  		    }
 	  		    
