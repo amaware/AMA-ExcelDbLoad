@@ -1,4 +1,6 @@
 package net.amaware.apps.exceldbload;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,20 +42,52 @@ public class MainExcelDbLoad {
 				acomm = new ACommDbFile(propFileName, args);
 				
 	  		    for (String thisFileName: acomm.getFileList(Arrays.asList(".xls",".xlst",".txt"))) {
-	  		    	   acomm.addPageMsgsLineOut(thisClassName+"====>Process File{" + thisFileName +"}");
-	  		    	
-						mainApp = new MainAppDataStore(acomm, new ExcelDbTable(), thisFileName, acomm.getFileTextDelimTab());
+	  		    	   acomm.addPageMsgsLineOut(thisClassName+"=>Input File{" + thisFileName +"}");
+	  		    	   //
+						int colHeadRow=2;
+						int colDetRow=3;
+						//
+						try {
+						 AFileExcelPOI aFileExcelPOI = new AFileExcelPOI();
+						
+						 aFileExcelPOI.openInput(thisFileName);
+						 
+						 List<String> excelColList = aFileExcelPOI.readNextAsStringList();
+						 int rowNum=0;
+						 while (excelColList.size() > 0 && rowNum<3) {
+							 ++rowNum;
+							 if (excelColList.get(0).contentEquals("PK-UNIQUE")) {
+								colHeadRow=3;
+								colDetRow=4;
+								break; 
+							 }
+							 excelColList = aFileExcelPOI.readNextAsStringList();
+						 }
+						 
+			            } catch (IOException e) {
+			            	throw new AException(acomm, thisClassName + " File Not found{"+thisFileName+"}");
+		                }	  		    	   
+	  		    	   
+	  		    	   //
+						
+						acomm.addPageMsgsLineOut(thisClassName+"==>File ColHeaderRow{" + colHeadRow +"}"
+								                +" |ColDetailRowStart{" + colDetRow +"}");
+						
+	  		    	    ExcelDbTable aExcelDbTable = new ExcelDbTable();
+	  		    	    
+						mainApp = new MainAppDataStore(acomm, aExcelDbTable, thisFileName, acomm.getFileTextDelimTab());
 	  		    	    //mainApp = new MainAppDataStore(acomm, new ExcelDbTable(), thisFileName, '|');
 						//
 						mainApp.setSourceHeadRowStart(1);
+
 						//
-						//mainApp.setSourceDataHeadRowStart(3);
-						mainApp.setSourceDataHeadRowStart(2);
-						//
-						//mainApp.setSourceDataRowStart(4);
-						mainApp.setSourceDataRowStart(3);
+						mainApp.setSourceDataHeadRowStart(colHeadRow);
+						mainApp.setSourceDataRowStart(colDetRow);
 						//
 						//mainApp.setSourceDataRowEnd(10);
+						
+						aExcelDbTable.setMainAppDataStore(mainApp);
+						
 						//
 						mainApp.doProcess(acomm, "MainExcelDbTable");		
 	  		    }
@@ -72,8 +106,8 @@ public class MainExcelDbLoad {
 
 		}
 //
-
 //
+
 //
 // END CLASS
 //	

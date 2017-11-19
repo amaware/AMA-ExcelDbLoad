@@ -17,6 +17,7 @@ import java.util.Vector;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import net.amaware.app.DataStoreReport;
+import net.amaware.app.MainAppDataStore;
 import net.amaware.aproc.SqlMetaData;
 import net.amaware.autil.AComm;
 import net.amaware.autil.ACommDb;
@@ -113,14 +114,23 @@ public class ExcelDbTable extends DataStoreReport {
 	int outStatementInsertCtr = 0;
 	int outStatementValueCtr = 0;    
     //
+	MainAppDataStore thisMainAppDataStore=null;
+	//
 	/**
 	* 
 	*/
+
 	public ExcelDbTable() {
 		super();
 
 	}
 
+	public void setMainAppDataStore(MainAppDataStore _MainAppDataStore) {
+		
+		thisMainAppDataStore=_MainAppDataStore;
+
+	}	
+	
 	@Override
 	public DataStoreReport processThis(ACommDb acomm, SourceProperty _aProperty, HtmlTargetServ _aHtmlServ) {
 		super.processThis(acomm, _aProperty, _aHtmlServ); // always call this
@@ -234,9 +244,9 @@ public class ExcelDbTable extends DataStoreReport {
 	   //
        /**/
        
-		super.doDataHead(acomm, rowNum);	       
+		//super.doDataHead(acomm, rowNum);	       
        
-       List<ADataColResult> al = getRowDataColResultList();
+       //List<ADataColResult> al = getRowDataColResultList();
        
 		Enumeration en = getDataRow().getDataColVec().elements();
 		//int cnt=0;
@@ -246,14 +256,18 @@ public class ExcelDbTable extends DataStoreReport {
 		    		(aDataColResult.getColumnName().contentEquals("PK-UNIQUE"))) {
     	    	//ADataColResult newADataColResult = new ADataColResult("",aDataColResult.getColumnValue(), aDataColResult.getColumnValue(), true); 
     	    	// dataHeaderDataColResultList.add(newADataColResult);
-    	    	++bypassDataHeadRecCnt;
+    	    	//++bypassDataHeadRecCnt;
+    	    	if (thisMainAppDataStore!=null) {
+    	    	   thisMainAppDataStore.setSourceDataHeadRowStart(3);
+    	    	   thisMainAppDataStore.setSourceDataRowStart(4);
+		        }
     	    	return true;
-	        } else {
-	        	break;
+	        //} else {
+	        //	break;
 	        }
 		}
 		/**/
-		
+		super.doDataHead(acomm, rowNum);	
 	   //
        setUpDataHead(acomm, rowNum, getRowDataColResultList());
        //			
