@@ -578,7 +578,7 @@ public class ExcelDbTable extends DataStoreReport {
 			//String firstField = getDataRowColsToList().get(0);
 			//getDataRowColsToList().set(0, "res-"+outReqResultBuffer.toString());
 			
-			outRowCols.addAll(getDataRowColsToList());
+			outRowCols.addAll(getDataRowColsValueList());
 			
 			outRowCols.set(0,optFileRowOption.toString()+ "{"+outReqResultBuffer.toString()+ "}");
 			
